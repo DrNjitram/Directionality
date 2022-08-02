@@ -41,6 +41,8 @@ import ij.process.ColorProcessor;
 import ij.process.FHT;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
+import org.scijava.ItemIO;
+import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
@@ -268,14 +270,14 @@ public class Directionality_ implements Command
 	 */
 	private static final double SIGMA_NUMBER = 2;
 
-	private static final String PLUGIN_NAME = "Directionality analysis";
 
-	private static final String VERSION_STR = "2.4.0";
+	@Parameter(label = "Version:", visibility = ItemVisibility.MESSAGE)
+	private String VERSION_STR = "2.4.0";
 
 	/* USER SETTING FIELDS, memorized between runs */
 
 	/** The ImagePlus this plugin operates on. */
-	@Parameter(label = "Image", description = "The ImagePlus this plugin operates on")
+	@Parameter(type= ItemIO.INPUT)
 	protected ImagePlus imp;
 
 	/** Method used for analysis, as set by the user. */
@@ -394,7 +396,7 @@ public class Directionality_ implements Command
 		imp = WindowManager.getCurrentImage();
 		if ( null == imp )
 		{
-			IJ.error( "Directionality", "No images are open." );
+			logService.error("No images are open.");
 			return;
 		}
 
@@ -417,7 +419,7 @@ public class Directionality_ implements Command
 				}
 				catch ( final NumberFormatException nfe )
 				{
-					IJ.error( "Directionality: bad argument for number of bins: " + str );
+					logService.error( "Directionality: bad argument for number of bins: " + str );
 					return;
 				}
 			}
@@ -430,7 +432,7 @@ public class Directionality_ implements Command
 				}
 				catch ( final NumberFormatException nfe )
 				{
-					IJ.error( "Directionality: bad argument for start point: " + str );
+					logService.error( "Directionality: bad argument for start point: " + str );
 					return;
 				}
 			}
@@ -444,7 +446,7 @@ public class Directionality_ implements Command
 				}
 				catch ( final NumberFormatException nfe )
 				{
-					IJ.error( "Directionality: bad argument for end point: " + str );
+					logService.error( "Directionality: bad argument for end point: " + str );
 					return;
 				}
 			}
