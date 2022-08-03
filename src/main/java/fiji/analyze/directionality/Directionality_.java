@@ -271,10 +271,10 @@ public class Directionality_ implements Command
 	private static final double SIGMA_NUMBER = 2;
 
 
+	/* USER SETTING FIELDS, memorized between runs */
+
 	@Parameter(label = "Version:", visibility = ItemVisibility.MESSAGE)
 	private String VERSION_STR = "2.4.0";
-
-	/* USER SETTING FIELDS, memorized between runs */
 
 	/** The ImagePlus this plugin operates on. */
 	@Parameter(type= ItemIO.INPUT)
@@ -337,6 +337,10 @@ public class Directionality_ implements Command
 
 	protected int width, height, small_side, long_side, npady, npadx, step, pad_size;
 
+	private final ArrayList<float[]> external_pixels_theta = new ArrayList<>();
+	private final ArrayList<float[]> external_pixels_r = new ArrayList<>();
+
+
 	/**
 	 * The bin centers, in radians. Internally, they always range from -pi/2 to
 	 * pi/2.
@@ -396,7 +400,7 @@ public class Directionality_ implements Command
 		imp = WindowManager.getCurrentImage();
 		if ( null == imp )
 		{
-			logService.error("No images are open.");
+			logService.error( "No images are open.");
 			return;
 		}
 
@@ -536,6 +540,7 @@ public class Directionality_ implements Command
 		if ( null == imp )
 			return;
 
+
 		// Reset analysis fields
 		params_from_fit = null;
 		goodness_of_fit = null;
@@ -564,6 +569,7 @@ public class Directionality_ implements Command
 		double[] dir = null;
 		for ( int i = 0; i < n_slices; i++ )
 		{
+
 			slice_index = i;
 			ip = imp.getStack().getProcessor( i + 1 );
 			for ( int channel_number = 0; channel_number < ip.getNChannels(); channel_number++ )
@@ -597,6 +603,7 @@ public class Directionality_ implements Command
 				histograms.add( dir );
 			}
 		}
+
 	}
 
 	/**
@@ -1056,15 +1063,15 @@ public class Directionality_ implements Command
 	 * Sets the desired end for the angle bins, in degrees. This resets the
 	 * <code>histograms</code> field to null.
 	 *
-	 * @param bin_start
+	 * @param start
 	 *            the bin start.
-	 * @param bin_end
+	 * @param end
 	 *            the bin end.
 	 */
-	public void setBinRange( final double bin_start, final double bin_end )
+	public void setBinRange( final double start, final double end )
 	{
-		this.bin_start = bin_start;
-		this.bin_end = Math.min( bin_end , bin_start + 180 );
+		bin_start = start;
+		bin_end = Math.min( end , bin_start + 180 );
 		histograms = null;
 	}
 
@@ -1140,6 +1147,8 @@ public class Directionality_ implements Command
 
 	public void setSobel(int size) { sobel_size = size; }
 	public int getSobel() {return sobel_size; }
+	public ArrayList<float[]> getTheta() {return external_pixels_theta;}
+	public ArrayList<float[]> getR() {return external_pixels_r;}
 	/*
 	 * PRIVATE METHODS
 	 */
@@ -1223,6 +1232,7 @@ public class Directionality_ implements Command
 	private double[] local_gradient_orientation( final FloatProcessor ip )
 	{
 //		double[] dir = new double[nbins]; // histo with #bins
+
 		final double[] norm_dir = new double[ nbins ]; // histo;
 		final FloatProcessor grad_x = ( FloatProcessor ) ip.duplicate();
 		final FloatProcessor grad_y = ( FloatProcessor ) ip.duplicate();
@@ -1230,7 +1240,7 @@ public class Directionality_ implements Command
 		final float[][] kernels = getSobelKernel(sobel_size);
 
 
-		convolver.convolveFloat( grad_x, kernels[0], sobel_size, sobel_size);
+		convolver.convolveFloat( grad_x, kernels[0], sobel_size, sobel_size );
 		convolver.convolveFloat( grad_y, kernels[1], sobel_size, sobel_size );
 
 		final float[] pixels_gx = ( float[] ) grad_x.getPixels();
@@ -1244,6 +1254,8 @@ public class Directionality_ implements Command
 		double range1_min, range1_max, range2_min, range2_max;
 		int histo_index;
 		float dx, dy;
+
+
 
 		// generate range of allowed angles within -90 and +90 degs
 		wrapped_start = ( ( bin_start + 90 ) % 180 + 180 ) % 180 - 90;
@@ -1341,6 +1353,9 @@ public class Directionality_ implements Command
 			cp.setHSB( H, S, B );
 			orientation_map.addSlice( makeNames()[ slice_index ], cp );
 		}
+
+		external_pixels_r.add(pixels_r);
+		external_pixels_theta.add(pixels_theta);
 
 		return norm_dir;
 	}
@@ -2086,9 +2101,10 @@ public class Directionality_ implements Command
 
 		da.setBuildOrientationMapFlag( false );
 		da.setDebugFlag( false );
+		da.setSobel(7);
 
-		method = AnalysisMethod.FOURIER_COMPONENTS;
-//		method = AnalysisMethod.LOCAL_GRADIENT_ORIENTATION;
+//        method = AnalysisMethod.FOURIER_COMPONENTS;
+		method = AnalysisMethod.LOCAL_GRADIENT_ORIENTATION;
 		da.setMethod( method );
 		da.computeHistograms();
 		fit_results = da.getFitParameters();
